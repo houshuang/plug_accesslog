@@ -48,6 +48,51 @@ defmodule AppRouter do
 end
 ```
 
+### Do Not Log Filter
+
+To filter the requests before logging you can configure a "do not log" filter
+function:
+
+```elixir
+defmodule LogFilter do
+  def dontlog?(conn), do: "/favicon.ico" == full_path(conn)
+end
+
+defmodule Router do
+  use Plug.Router
+
+  plug Plug.AccessLog,
+    dontlog: &LogFilter.dontlog?/1,
+    format: :clf,
+    file: "/path/to/your/logs/access.log"
+end
+```
+
+If the function you pass to the plug returns `true` the request will not be
+logged.
+
+### Logging Functions
+
+To have the parsed log message sent to a logging function instead of writing
+it to a file you can configure a logging function:
+
+```elixir
+defmodule InfoLogger do
+  def log(msg), do: Logger.log(:info, msg)
+end
+
+defmodule Router do
+  use Plug.Router
+
+  plug Plug.AccessLog,
+    format: :clf,
+    fun: &InfoLogger.log/1
+end
+```
+
+If a logging function is configured the configured file (if any) will be
+ignored.
+
 
 ## Log Format
 
@@ -88,33 +133,42 @@ Besides a self defined format you can use one of the predefined aliases:
 The following formatting directives are available:
 
 - `%%` - Percentage sign
+- `%a` - Remote IP-address
 - `%b` - Size of response in bytes. Outputs "-" when no bytes are sent.
 - `%B` - Size of response in bytes. Outputs "0" when no bytes are sent.
 - `%{VARNAME}C` - Cookie sent by the client
+- `%D` - Time taken to serve the request (microseconds)
 - `%h` - Remote hostname
 - `%{VARNAME}i` - Header line sent by the client
 - `%l` - Remote logname
 - `%m` - Request method
+- `%M` - Time taken to serve the request (milliseconds)
 - `%{VARNAME}o` - Header line sent by the server
+- `%q` - Query string (prepended with "?" or empty string)
 - `%r` - First line of HTTP request
 - `%>s` - Response status code
 - `%t` - Time the request was received in the format `[10/Jan/2015:14:46:18 +0100]`
+- `%T` - Time taken to serve the request (full seconds)
 - `%u` - Remote user
 - `%U` - URL path requested (without query string)
 - `%v` - Server name
+- `%V` - Server name (canonical)
 
 **Note for %b and %B**: To determine the size of the response the
 "Content-Length" will be inspected and, if available, returned
 unverified. If the header is not present the response body will be
 inspected using `byte_size/1`.
 
-**Note for %h**: The hostname will always be the ip of the client.
+**Note for %h**: The hostname will always be the ip of the client (same as `%a`).
 
 **Note for %l**: Always a dash ("-").
 
 **Note for %r**: For now the http version is always logged as "HTTP/1.1",
 regardless of the true http version.
 
+**Note for %T**: Rounding happens, so "0.6 seconds" will be reported as "1 second".
+
+**Note for %V**: Alias for `%v`.
 
 ## License
 

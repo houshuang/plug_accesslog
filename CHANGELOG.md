@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.7.0-dev
+
+- Enhancements
+  - Log writing is now handled by a GenEvent handler to avoid crashing
+
+- Additional formatting directives
+  - `%a` - Remote IP-address
+  - `%D` - Time taken to serve the request (microseconds)
+  - `%M` - Time taken to serve the request (milliseconds)
+  - `%q` - Query string (prepended with "?" or empty string)
+  - `%T` - Time taken to serve the request (full seconds)
+  - `%V` - Server name (canonical)
+
 ## v0.6.0 (2015-05-23)
 
 - Enhancements

@@ -6,7 +6,9 @@ defmodule Plug.AccessLog.FormatterTest do
 
   test "no format means default format" do
     datetime = :calendar.local_time()
-    conn     = conn(:get, "/") |> put_private(:plug_accesslog, datetime)
+    conn     =
+         conn(:get, "/")
+      |> put_private(:plug_accesslog, %{ local_time: datetime })
 
     assert Formatter.format(nil, conn) == Formatter.format(:default, conn)
   end
@@ -42,6 +44,13 @@ defmodule Plug.AccessLog.FormatterTest do
     conn = conn(:get, "/") |> Map.put(:host, host)
 
     assert host == Formatter.format("%v", conn)
+  end
+
+  test "%V" do
+    host = "plug.log.access"
+    conn = conn(:get, "/") |> Map.put(:host, host)
+
+    assert host == Formatter.format("%V", conn)
   end
 
 

@@ -20,32 +20,42 @@ defmodule Plug.AccessLog.Formatter do
   The following formatting directives are available:
 
   - `%%` - Percentage sign
+  - `%a` - Remote IP-address
   - `%b` - Size of response in bytes. Outputs "-" when no bytes are sent.
   - `%B` - Size of response in bytes. Outputs "0" when no bytes are sent.
   - `%{VARNAME}C` - Cookie sent by the client
+  - `%D` - Time taken to serve the request (microseconds)
   - `%h` - Remote hostname
   - `%{VARNAME}i` - Header line sent by the client
   - `%l` - Remote logname
   - `%m` - Request method
+  - `%M` - Time taken to serve the request (milliseconds)
   - `%{VARNAME}o` - Header line sent by the server
+  - `%q` - Query string (prepended with "?" or empty string)
   - `%r` - First line of HTTP request
   - `%>s` - Response status code
   - `%t` - Time the request was received in the format `[10/Jan/2015:14:46:18 +0100]`
+  - `%T` - Time taken to serve the request (full seconds)
   - `%u` - Remote user
   - `%U` - URL path requested (without query string)
   - `%v` - Server name
+  - `%V` - Server name (canonical)
 
   **Note for %b and %B**: To determine the size of the response the
   "Content-Length" will be inspected and, if available, returned
   unverified. If the header is not present the response body will be
   inspected using `byte_size/1`.
 
-  **Note for %h**: The hostname will always be the ip of the client.
+  **Note for %h**: The hostname will always be the ip of the client (same as `%a`).
 
   **Note for %l**: Always a dash ("-").
 
   **Note for %r**: For now the http version is always logged as "HTTP/1.1",
   regardless of the true http version.
+
+  **Note for %T**: Rounding happens, so "0.6 seconds" will be reported as "1 second".
+
+  **Note for %V**: Alias for `%v`.
   """
   @spec format(format :: atom | String.t, conn :: Plug.Conn.t) :: String.t
   def format(nil,      conn), do: format(:clf, conn)
@@ -72,6 +82,12 @@ defmodule Plug.AccessLog.Formatter do
     |> log(conn, rest)
   end
 
+  defp log(message, conn, << "%a", rest :: binary >>) do
+    message
+    |> Formatter.RemoteIPAddress.append(conn)
+    |> log(conn, rest)
+  end
+
   defp log(message, conn, << "%b", rest :: binary >>) do
     message
     |> Formatter.ResponseBytes.append(conn, "-")
@@ -84,9 +100,15 @@ defmodule Plug.AccessLog.Formatter do
     |> log(conn, rest)
   end
 
+  defp log(message, conn, << "%D", rest :: binary >>) do
+    message
+    |> Formatter.RequestServingTime.append(conn, :usecs)
+    |> log(conn, rest)
+  end
+
   defp log(message, conn, << "%h", rest :: binary >>) do
     message
-    |> Formatter.RemoteHostname.append(conn)
+    |> Formatter.RemoteIPAddress.append(conn)
     |> log(conn, rest)
   end
 
@@ -97,6 +119,18 @@ defmodule Plug.AccessLog.Formatter do
 
   defp log(message, conn, << "%m", rest :: binary >>) do
     message <> conn.method
+    |> log(conn, rest)
+  end
+
+  defp log(message, conn, << "%M", rest :: binary >>) do
+    message
+    |> Formatter.RequestServingTime.append(conn, :msecs)
+    |> log(conn, rest)
+  end
+
+  defp log(message, conn, << "%q", rest :: binary >>) do
+    message
+    |> Formatter.QueryString.append(conn)
     |> log(conn, rest)
   end
 
@@ -117,6 +151,12 @@ defmodule Plug.AccessLog.Formatter do
     |> log(conn, rest)
   end
 
+  defp log(message, conn, << "%T", rest :: binary >>) do
+    message
+    |> Formatter.RequestServingTime.append(conn, :secs)
+    |> log(conn, rest)
+  end
+
   defp log(message, conn, << "%u", rest :: binary >>) do
     message
     |> Formatter.RemoteUser.append(conn)
@@ -130,6 +170,11 @@ defmodule Plug.AccessLog.Formatter do
   end
 
   defp log(message, conn, << "%v", rest :: binary >>) do
+    message <> conn.host
+    |> log(conn, rest)
+  end
+
+  defp log(message, conn, << "%V", rest :: binary >>) do
     message <> conn.host
     |> log(conn, rest)
   end
