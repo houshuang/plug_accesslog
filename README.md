@@ -10,7 +10,7 @@ as a dependency:
 
 ```elixir
 defp deps do
-  [ { :plug_accesslog, "~> 0.6" } ]
+  [ { :plug_accesslog, "~> 0.10" } ]
 end
 ```
 
@@ -47,6 +47,41 @@ defmodule AppRouter do
   end
 end
 ```
+
+__Note__: The usage examples apply to a usecase where your are using `plug`
+directly without any framework. Using the `plug Plug.AccessLog` line in a
+framework based on `plug` should be no problem. Please refer to your frameworks
+individual documentation or source to find a suitable place.
+
+### Custom Formatters
+
+If you want to extend the formatting capabilities or replace existing ones
+you can define a custom formatter pipeline to use:
+
+```elixir
+defmodule CustomFormatter do
+  @behaviour Plug.AccessLog.Formatter
+
+  def format(format, conn) do
+    # manipulate to your liking
+    format
+  end
+end
+
+defmodule Router do
+  use Plug.Router
+
+  plug Plug.AccessLog,
+    format: :clf,
+    formatters: [ CustomFormatter, Plug.AccessLog.DefaultFormatter ],
+    file: "/path/to/your/logs/access.log"
+end
+```
+
+If you do not configure a list of formatters only the `DefaultFormatter` will
+be used. If you define an empty list then no formatting will take place.
+
+All formatters are called in the order they are defined in.
 
 ### Do Not Log Filter
 
@@ -144,11 +179,13 @@ The following formatting directives are available:
 - `%m` - Request method
 - `%M` - Time taken to serve the request (milliseconds)
 - `%{VARNAME}o` - Header line sent by the server
+- `%P` - The process ID that serviced the request
 - `%q` - Query string (prepended with "?" or empty string)
 - `%r` - First line of HTTP request
 - `%>s` - Response status code
 - `%t` - Time the request was received in the format `[10/Jan/2015:14:46:18 +0100]`
 - `%T` - Time taken to serve the request (full seconds)
+- `%{UNIT}T` - Time taken to serve the request in the given UNIT
 - `%u` - Remote user
 - `%U` - URL path requested (without query string)
 - `%v` - Server name
@@ -168,7 +205,29 @@ regardless of the true http version.
 
 **Note for %T**: Rounding happens, so "0.6 seconds" will be reported as "1 second".
 
+**Note for %{UNIT}T**: Available units are `s` for seconds (same as `%T`),
+`ms` for milliseconds (same as `M`) and `us` for microseconds (same as `%D`).
+
 **Note for %V**: Alias for `%v`.
+
+
+## &quot;Benchmarking&quot;
+
+A small utility script is provided to check how long it might take to process
+requests and write the log messages to your disk:
+
+```shell
+mix run utils/bench.exs
+```
+
+This call will send of a total of 10k requests and wait for them to be written
+to the disk.
+
+Looking at the data written to `utils/bench.log` might give a hint at what
+overhead the log writing is introducing. As with all "benchmarks" of any kind:
+take the measurements with a pinch of salt and run them in dozens of different
+conditions yourself.
+
 
 ## License
 

@@ -1,8 +1,38 @@
 # Changelog
 
-## v0.7.0-dev
+## v0.10.0 (2016-01-06)
+
+- Additional formatting directives
+  - `%P` - The process ID that serviced the request
+  - `%{UNIT}T` - Time taken to serve the request in the given UNIT
+
+- Backwards incompatible changes
+  - Minimum required version of :timex raised to "~> 1.0"
+
+## v0.9.1 (2015-09-29)
 
 - Enhancements
+  - Application :tzdata (for recent :timex/:tzdata versions) is started automatically
+
+- Backwards incompatible changes
+  - Minimum required version of :timex raised to "~> 0.19"
+  - Minimum required version of :tzdata raised to "=> 0.5.1"
+
+## v0.9.0 (2015-08-15)
+
+- Backwards incompatible changes
+  - Minimum required version of :plug raised to "~> 1.0"
+
+## v0.8.0 (2015-08-08)
+
+- Backwards incompatible changes
+  - Minimum required version of :plug raised to "~> 0.14"
+
+## v0.7.0 (2015-07-19)
+
+- Enhancements
+  - Allows passing custom formatters
+  - Errors when open logfiles are logged as errors using Logger
   - Log writing is now handled by a GenEvent handler to avoid crashing
 
 - Additional formatting directives
@@ -12,6 +42,9 @@
   - `%q` - Query string (prepended with "?" or empty string)
   - `%T` - Time taken to serve the request (full seconds)
   - `%V` - Server name (canonical)
+
+- Backwards incompatible changes
+  - `Plug.AccessLog.Formatter` has been renamed to `Plug.AccessLog.DefaultFormatter`
 
 ## v0.6.0 (2015-05-23)
 

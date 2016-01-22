@@ -1,12 +1,12 @@
-defmodule Plug.AccessLog.Formatter.RequestServingTimeTest do
+defmodule Plug.AccessLog.DefaultFormatter.RequestServingTimeTest do
   use ExUnit.Case, async: true
   use Plug.Test
 
   use Timex
 
-  alias Plug.AccessLog.Formatter
+  alias Plug.AccessLog.DefaultFormatter
 
-  test "%D" do
+  test "%D == %{us}T" do
     timestamp = :os.timestamp()
     conn      =
          conn(:get, "/")
@@ -14,12 +14,14 @@ defmodule Plug.AccessLog.Formatter.RequestServingTimeTest do
 
     # relying on microsecond testing precision is flaky.
     # check done using "microseconds taken < 1 second"
-    { usecs, _ } = Formatter.format("%D", conn) |> Integer.parse()
+    { usecs, _ } = DefaultFormatter.format("%D", conn) |> Integer.parse()
+    { t_var, _ } = DefaultFormatter.format("%{us}T", conn) |> Integer.parse()
 
     assert usecs < 1000000
+    assert t_var < 1000000
   end
 
-  test "%M" do
+  test "%M == %{ms}T" do
     timestamp = :os.timestamp()
     conn      =
          conn(:get, "/")
@@ -27,18 +29,21 @@ defmodule Plug.AccessLog.Formatter.RequestServingTimeTest do
 
     # relying on millisecond testing precision is flaky.
     # check done using "milliseconds taken < 1 second"
-    { msecs, _ } = Formatter.format("%M", conn) |> Integer.parse()
+    { msecs, _ } = DefaultFormatter.format("%M", conn) |> Integer.parse()
+    { t_var, _ } = DefaultFormatter.format("%{ms}T", conn) |> Integer.parse()
 
     assert msecs < 1000
+    assert t_var < 1000
   end
 
-  test "%T" do
+  test "%T == %{s}T" do
     timestamp = :os.timestamp()
     conn      =
          conn(:get, "/")
       |> put_private(:plug_accesslog, %{ timestamp: timestamp })
 
-    assert "0" == Formatter.format("%T", conn)
+    assert "0" == DefaultFormatter.format("%T", conn)
+    assert "0" == DefaultFormatter.format("%{s}T", conn)
   end
 
   test "%T rounding" do
@@ -47,6 +52,7 @@ defmodule Plug.AccessLog.Formatter.RequestServingTimeTest do
          conn(:get, "/")
       |> put_private(:plug_accesslog, %{ timestamp: timestamp })
 
-    assert "1" == Formatter.format("%T", conn)
+    assert "1" == DefaultFormatter.format("%T", conn)
+    assert "1" == DefaultFormatter.format("%{s}T", conn)
   end
 end
